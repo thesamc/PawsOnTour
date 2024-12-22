@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PAWS on Tour - Explore Texas State University's campus with our interactive tour guide">
+    <title>Paws On Tour - Enhanced Edition</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link href="https://fonts.googleapis.com/css2?family=Monofett&family=Chicle&family=Tinos&family=Faster+One&family=Roboto&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Added new CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <style>
+        /* Original CSS variables with enhancements */
+        :root {
+            --primary: #501214;
+            --secondary: #6a5638;
+            --accent: #d2b650;
+            --background: #f8f9fa;
+            --text: #2d3748;
+            --light: #f4f1ed;
+            --navbar-color: var(--primary);
+            --nav-button-color: var(--accent);
+            --nav-button-color-rgb: 210, 182, 80;
+            --success: #28a745;
+            --warning: #ffc107;
+            --error: #dc3545;
+            --info: #17a2b8;
+            --transition-speed: 0.3s;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        /* Enhanced dark mode */
+        [data-theme="high-contrast"] {
+            --primary: #400a0c;
+            --secondary: #4a3618;
+            --accent: #ffd700;
+            --background: #1a1a1a;
+            --text: #ffffff;
+            --light: #333333;
+            --navbar-color: #2d0708;
+            --nav-button-color: #ffd700;
+            --nav-button-color-rgb: 255, 215, 0;
+            --card-bg: #2d2d2d;
+            --border-color: #4a4a4a;
+        }
+
+        /* Base styles with accessibility improvements */
+        body {
+            font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Enhanced accessibility controls */
+        .accessibility-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .accessibility-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .accessibility-button:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        /* Enhanced navigation */
+        .navbar {
+            width: 100vw;
+            margin: 0;
+            padding: 2.5rem 0;
+            background-color: var(--navbar-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 999;
+            transition: background-color var(--transition-speed) ease;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Progress tracker */
+        .progress-tracker {
+            position: sticky;
+            top: 0;
+            z-index: 998;
+            background: white;
+            padding: 15px;
+            box-shadow: var(--box-shadow);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width var(--transition-speed) ease;
+        }
+
+        /* Enhanced search and filter */
+        .search-filter-container {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin: 20px 0;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .filter-chip {
+            background: var(--light);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Enhanced landmarks display */
+        .landmarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 3rem;
+            max-width: 1400px;
+            margin: 3rem auto;
+            padding: 0 3rem;
+        }
+
+        .landmark {
+            position: relative;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            transition: transform var(--transition-speed) ease;
+            height: 100%;
+            min-height: 380px;
+        }
+
+        .landmark:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Accessibility features */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary);
+            color: white;
+            padding: 8px;
+            z-index: 1000;
+            transition: top 0.3s;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
+        /* Loading states */
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                #f0f0f0 25%,
+                #f8f8f8 50%,
+                #f0f0f0 75%
+            );
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Enhanced mobile responsiveness */
+        @media (max-width: 768px) {
+            .landmarks-grid {
+                grid-template-columns: 1fr;
+                padding: 0 1rem;
+            }
+
+            .accessibility-controls {
+                flex-direction: column;
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .filter-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            .landmark {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Animation classes */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+    </style>
+
+    <!-- PWA support -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#501214">
+</head>
+<body>
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Accessibility controls -->
+    <div class="accessibility-controls">
+        <button class="accessibility-button" onclick="toggleTheme()">Toggle Dark Mode</button>
+        <button class="accessibility-button" onclick="toggleFontSize()">Toggle Font Size</button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light position-relative">
+        <div class="container-fluid">
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav w-100 justify-content-center align-items-center">
+                    <li class="nav-item mx-4">
+                        <h1 class="letter">PAWS ON TOUR</h1>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main id="main-content">
+        <!-- Vue app mount point -->
+        <div id="app"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <h5>Current release: 7.0. Last update: 12/02/24 11:13 a.m.</h5>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-router@3"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Main application script -->
+    <script>
+        // Original data array remains the same...
+        const data = [/* Your existing data array */];
+
+        // Enhanced components
+        const EnhancedSearch = {
+            props: ['landmarks'],
+            data() {
+                return {
+                    searchQuery: '',
+                    selectedLocations: [],
+                    selectedAccessibility: [],
+                    locations: ['West Campus', 'Central Campus', 'East Campus', 'Riverfront', 'Hilltop', 'North Campus'],
+                    accessibilityOptions: ['Wheelchair Accessible', 'Elevator Available', 'Accessible Restroom']
+                }
+            },
+            computed: {
+                filteredLandmarks() {
+                    return this.landmarks.filter(landmark => {
+                        const matchesSearch = landmark.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                            landmark.desc.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        const matchesLocation = this.selectedLocations.length === 0 || 
+                                              this.selectedLocations.includes(landmark.location);
+                        return matchesSearch && matchesLocation;
+                    });
+                }
+            },
+            template: `
+                <div class="search-filter-container">
+                    <input 
+                        v-model="searchQuery"
+                        type="text"
+                        placeholder="Search landmarks..."
+                        class="form-control mb-3"
+                    />
+                    <div class="filter-group">
+                        <div 
+                            v-for="location in locations"
+                            :key="location"
+                            @click="toggleLocation(location)"
+                            :class="['filter-chip', { active: selectedLocations.includes(location) }]"
+                        >
+                            {{ location }}
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        // Progress Tracker Component
+        const ProgressTracker = {
+            props: ['visited', 'total'],
+            computed: {
+                progress() {
+                    return (this.visited / this.total) * 100;
+                }
+            },
+            template: `
+                <div class="progress-tracker">
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>{{ visited }} of {{ total }} locations visited</span>
+                        <span>{{ Math.round(progress) }}% complete</span>
+                    </div>
+                </div>
+            `
+        };
+
+        // Main Vue application
+        new Vue({
+            el: '#app',
+            router,
+            data: {
+                visitedLocations: [],
+                currentLocation: null,
+                isOnline: navigator.onLine
+            },
+            computed: {
+                progress() {
+                    return this.visitedLocations.length;
+                }
+            },
+            methods: {
+                markAsVisited(locationId) {
+                    if (!this.visitedLocations.includes(locationId)) {
+                        this.visitedLocations.push(locationId);
+                        localStorage.setItem('visitedLocations', JSON.stringify(this.visitedLocations));
+                    }
+                },
+                async getCurrentLocation() {
+                    if ('geolocation' in navigator) {
+                        try {
+                            const position = await new Promise((resolve, reject) => {
+                                navigator.geolocation.getCurrentPosition(resolve, reject);
+                            });
+                            this.currentLocation = {
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude
+                            };
+                        } catch (error) {
+                            console.error('Error getting location:', error);
+                        }
+                    }
+                }
+            },
+            mounted() {
+                // Load visited locations from localStorage
+                const saved = localStorage.getItem('visitedLocations');
+                if (saved) {
+                    this.visitedLocations = JSON.parse(saved);
+                }
+
+                // Setup online/offline detection
+                window.addEventListener('online', () => this.isOnline = true);
+                window.addEventListener('offline', () => this.isOnline = false);
+
+                // Get current location if available
+                this.getCurrentLocation();
+
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js');
+                }
+            },
+            template: `
+                <div>
+                    <progress-tracker 
+                        :visited="progress"
+                        :total="18"
+                    />
+                    <enhanced-search :landmarks="landmarks" />
+                    <router-view 
+                        :landmarks="landmarks"
+                        @mark-visited="markAsVisited"
+                    />
+                </div>
+            `
+        });
+
+        // Utility functions
+        function toggleFontSize() {
+            const html = document.documentElement;
+            const currentSize = parseInt(getComputedStyle(html).fontSize);
+            html.style.fontSize = currentSize === 16 ? '18px' : '16px';localStorage.setItem('fontSize', html.style.fontSize);
+        }
+
+        // Enhanced location detection and distance calculation
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of earth in KM
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            return R * c;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+
+        // Enhanced landmark detail component
+        const LandmarkDetail = {
+            props: ['landmark'],
+            data() {
+                return {
+                    loading: true,
+                    nearby: [],
+                    weather: null,
+                    accessibilityInfo: {
+                        wheelchairAccess: true,
+                        elevatorAvailable: true,
+                        accessibleRestroom: true,
+                        brailleSignage: false
+                    }
+                }
+            },
+            methods: {
+                async loadWeather() {
+                    try {
+                        const response = await fetch(`/api/weather/${this.landmark.lat}/${this.landmark.lon}`);
+                        this.weather = await response.json();
+                    } catch (error) {
+                        console.error('Error loading weather:', error);
+                    }
+                },
+                findNearbyLocations() {
+                    this.nearby = data
+                        .filter(l => l.name !== this.landmark.name)
+                        .map(l => ({
+                            ...l,
+                            distance: getDistanceFromLatLonInKm(
+                                this.landmark.lat,
+                                this.landmark.lon,
+                                l.lat,
+                                l.lon
+                            )
+                        }))
+                        .sort((a, b) => a.distance - b.distance)
+                        .slice(0, 3);
+                }
+            },
+            mounted() {
+                this.loadWeather();
+                this.findNearbyLocations();
+                setTimeout(() => this.loading = false, 500);
+            },
+            template: `
+                <div class="landmark-detail" :class="{ 'skeleton': loading }">
+                    <!-- Weather Information -->
+                    <div v-if="weather" class="weather-info">
+                        <i :class="weather.icon"></i>
+                        <span>{{ weather.temperature }}°F</span>
+                        <span>{{ weather.condition }}</span>
+                    </div>
+
+                    <!-- Accessibility Information -->
+                    <div class="accessibility-info">
+                        <h3>Accessibility Features</h3>
+                        <ul>
+                            <li v-for="(value, key) in accessibilityInfo" :key="key">
+                                <i :class="value ? 'check' : 'times'"></i>
+                                {{ key.replace(/([A-Z])/g, ' $1').toLowerCase() }}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Nearby Locations -->
+                    <div class="nearby-locations">
+                        <h3>Nearby Locations</h3>
+                        <div class="nearby-grid">
+                            <div v-for="location in nearby" :key="location.name" class="nearby-card">
+                                <img :src="location.images[0].url" :alt="location.name">
+                                <div class="nearby-info">
+                                    <h4>{{ location.name }}</h4>
+                                    <p>{{ Math.round(location.distance * 1000) }}m away</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Tour -->
+                    <div class="virtual-tour">
+                        <h3>Virtual Tour</h3>
+                        <div class="panorama-viewer">
+                            <!-- Placeholder for 360° viewer -->
+                            <img :src="landmark.images[0].url" alt="Virtual tour placeholder">
+                            <button class="start-tour-btn">Start Virtual Tour</button>
+                        </div>
+                    </div>
+
+                    <!-- Social Sharing -->
+                    <div class="share-section">
+                        <h3>Share This Location</h3>
+                        <div class="share-buttons">
+                            <button @click="share('twitter')">Twitter</button>
+                            <button @click="share('facebook')">Facebook</button>
+                            <button @click="share('copy')">Copy Link</button>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+
+        // Lazy Loading Implementation
+        const lazyLoad = {
+            mounted(el) {
+                function loadImage() {
+                    if (el.dataset.src) {
+                        el.src = el.dataset.src;
+                        el.removeAttribute('data-src');
+                    }
+                }
+
+                function handleIntersect(entries, observer) {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            loadImage();
+                            observer.unobserve(el);
+                        }
+                    });
+                }
+
+                const observer = new IntersectionObserver(handleIntersect);
+                observer.observe(el);
+            }
+        };
+
+        // Enhanced Error Handling
+        Vue.config.errorHandler = function(err, vm, info) {
+            console.error('Vue Error:', err);
+            // Send to error tracking service
+            if (window.errorTracking) {
+                window.errorTracking.captureError(err);
+            }
+        };
+
+        // State Management for User Preferences
+        const userPreferences = {
+            data: {
+                fontSize: localStorage.getItem('fontSize') || '16px',
+                theme: localStorage.getItem('theme') || 'default',
+                visitedLocations: JSON.parse(localStorage.getItem('visitedLocations') || '[]'),
+                favorites: JSON.parse(localStorage.getItem('favorites') || '[]')
+            },
+            save() {
+                Object.entries(this.data).forEach(([key, value]) => {
+                    localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
+                });
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply saved preferences
+            document.documentElement.style.fontSize = userPreferences.data.fontSize;
+            document.documentElement.setAttribute('data-theme', userPreferences.data.theme);
+
+            // Check for updates
+            checkForUpdates();
+        });
+
+        async function checkForUpdates() {
+            try {
+                const response = await fetch('/api/version');
+                const { version } = await response.json();
+                if (version !== '7.0') {
+                    showUpdateNotification();
+                }
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+            }
+        }
+
+        function showUpdateNotification() {
+            const notification = document.createElement('div');
+            notification.className = 'update-notification';
+            notification.textContent = 'A new version is available. Refresh to update.';
+            document.body.appendChild(notification);
+        }
+        // Add this right after the closing </style> tag and before the body closing tag
+
+const app = new Vue({
+    el: '#app',
+    template: `
+        <div class="app-container">
+            <!-- App Description -->
+            <div class="app-description">
+                <div class="app-description-content">
+                    <h2>Discover Texas State University</h2>
+                    <p>Welcome to PAWS on Tour! Explore 18 must-visit locations across Texas State's beautiful campus.</p>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="search-filter-container">
+                <input 
+                    v-model="searchQuery" 
+                    type="text" 
+                    placeholder="Search landmarks or locations..." 
+                    class="form-control"
+                />
+                <div class="filter-group mt-3">
+                    <button 
+                        v-for="location in locations"
+                        :key="location"
+                        class="filter-chip"
+                        :class="{ active: selectedLocations.includes(location) }"
+                        @click="toggleLocation(location)"
+                    >
+                        {{ location }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Landmarks Grid -->
+            <div class="landmarks-grid">
+                <div v-for="landmark in filteredLandmarks" 
+                     :key="landmark.name" 
+                     class="landmark">
+                    <div class="location-number">{{ landmark.order }}</div>
+                    <img :src="landmark.images[0].url" :alt="landmark.name">
+                    <div class="landmark-details">
+                        <h3 class="landmark-name">{{ landmark.name }}</h3>
+                        <div class="landmark-location">{{ landmark.location }}</div>
+                        <p class="landmark-description">{{ landmark.desc }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    data() {
+        return {
+            searchQuery: '',
+            selectedLocations: [],
+            locations: ['West Campus', 'Central Campus', 'East Campus', 'Riverfront', 'Hilltop', 'North Campus'],
+            landmarks: data // This uses your existing data array
+        }
+    },
+    computed: {
+        filteredLandmarks() {
+            return this.landmarks.filter(landmark => {
+                const matchesSearch = landmark.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                    landmark.location.toLowerCase().includes(this.searchQuery.toLowerCase());
+                const matchesLocation = this.selectedLocations.length === 0 || 
+                                      this.selectedLocations.includes(landmark.location);
+                return matchesSearch && matchesLocation;
+            });
+        }
+    },
+    methods: {
+        toggleLocation(location) {
+            const index = this.selectedLocations.indexOf(location);
+            if (index === -1) {
+                this.selectedLocations.push(location);
+            } else {
+                this.selectedLocations.splice(index, 1);
+            }
+        }
+    }
+});
+    </script>
+</body>
+</html>
